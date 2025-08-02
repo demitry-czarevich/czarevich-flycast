@@ -1,38 +1,35 @@
-name: Build Flycast libretro core for Windows x64
+name: Build Flycast libretro core for Windows
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ master, main ]
-  pull_request:
 
 jobs:
-  build-windows-x64:
+  build:
     runs-on: windows-latest
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install MSYS2
-      uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        install: >-
-          base-devel
-          mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-SDL2
-          git
-        msystem: MINGW64
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            git
+          msystem: MINGW64
 
-    - name: Build Flycast core
-      shell: msys2 {0}
-      run: |
-        cd shell/libretro
-        make platform=windows_mingw_x64
+      - name: Build libretro core
+        shell: msys2 {0}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "MinGW Makefiles" -DLIBRETRO=ON -DCMAKE_BUILD_TYPE=Release
+          mingw32-make
 
-    - name: Upload Built Core
-      uses: actions/upload-artifact@v4
-      with:
-        name: flycast_libretro_windows_x64
-        path: shell/libretro/flycast_libretro.dll
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flycast_libretro_windows_x64
+          path: build/flycast_libretro.dll
