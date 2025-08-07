@@ -1,3 +1,5 @@
+Full Flycast repository, only russian language included for RetroArch core
+
 # Flycast
 
 [![Android CI](https://github.com/flyinghead/flycast/actions/workflows/android.yml/badge.svg)](https://github.com/flyinghead/flycast/actions/workflows/android.yml)
