@@ -1,4 +1,4 @@
-Full Flycast repository, only russian language included for RetroArch core
+# Full Flycast repository, only russian language included for RetroArch core
 
 # Flycast
 
