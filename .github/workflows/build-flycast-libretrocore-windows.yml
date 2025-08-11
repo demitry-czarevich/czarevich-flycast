@@ -38,4 +38,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: flycast_libretro_windows_x64
-          path: build/flycast_ru_libretro.dll
+          path: build/flycast_libretro.dll
