@@ -33,9 +33,11 @@ jobs:
           cd build
           cmake .. -G "MinGW Makefiles" -DLIBRETRO=ON -DCMAKE_BUILD_TYPE=Release
           mingw32-make
+          mv flycast_libretro.dll flycast_ru_libretro.dll
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: flycast_libretro_windows_x64
-          path: build/flycast_libretro.dll
+          path: build/flycast_ru_libretro.dll
+
