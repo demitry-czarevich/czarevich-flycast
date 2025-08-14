@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: C/C++ CI Only Windows
 
 on: [push, pull_request]
 
@@ -176,4 +176,5 @@ jobs:
         # env:
           # SENTRY_TOKEN: ${{ secrets.SENTRY_TOKEN }}
         # if: ${{ env.SENTRY_TOKEN != '' && (matrix.config.name == 'x86_64-w64-mingw32' || matrix.config.name == 'apple-darwin' || matrix.config.name == 'x86_64-pc-linux-gnu') }}
+
         
