@@ -35,6 +35,7 @@
 #include "hw/pvr/Renderer_if.h"
 #include "hw/arm7/arm7_rec.h"
 #include "network/ggpo.h"
+#include "network/ice.h"
 #include "hw/mem/mem_watch.h"
 #include "network/net_handshake.h"
 #include "network/naomi_network.h"
@@ -49,6 +50,9 @@
 #endif
 #include "hw/sh4/sh4_interpreter.h"
 #include "hw/sh4/dyna/ngen.h"
+#ifdef USE_DREAMLINK_DEVICES
+#include "sdl/dreamlink.h"
+#endif
 
 settings_t settings;
 constexpr char const *BIOS_TITLE = "Dreamcast BIOS";
@@ -266,7 +270,8 @@ static void loadSpecialSettings()
 			|| prod_id == "T0019M"		// KenJu Atomiswave DC Conversion
 			|| prod_id == "T0020M"		// Force Five Atomiswave DC Conversion
 			|| prod_id == "HDR-0187"	// Fushigi no Dungeon - Fuurai no Shiren Gaiden - Onna Kenshi Asuka Kenzan!
-			|| prod_id == "T15104D 50") // Slave Zero (PAL)
+			|| prod_id == "T15104D 50"	// Slave Zero (PAL)
+			|| prod_id == "MK-51152")	// World Series Baseball 2K2
 		{
 			NOTICE_LOG(BOOT, "Forcing real BIOS");
 			config::UseReios.override(false);
@@ -631,6 +636,11 @@ void Emulator::loadGame(const char *path, LoadProgress *progress)
 		}
 		if (!settings.naomi.slave)
 		{
+#ifdef USE_DREAMLINK_DEVICES
+			// Note: ordinarily we would like to use the 'events' system for this step.
+			// However, this call can change 'config::MapleExpansionDevices', and therefore needs to run before 'mcfg_CreateDevices'.
+			reconnectDreamLinks();
+#endif
 			mcfg_DestroyDevices();
 			mcfg_CreateDevices();
 			if (settings.platform.isNaomi())
@@ -690,9 +700,9 @@ void Emulator::runInternal()
 		getSh4Executor()->Step();
 		singleStep = false;
 	}
-	else if(stepRangeTo != 0)
+	else if (stepRangeTo != 0)
 	{
-		while (Sh4cntx.pc >= stepRangeFrom && Sh4cntx.pc <= stepRangeTo)
+		while (Sh4cntx.pc >= stepRangeFrom && Sh4cntx.pc < stepRangeTo)
 			getSh4Executor()->Step();
 
 		stepRangeFrom = 0;
@@ -733,7 +743,8 @@ void Emulator::unloadGame()
 		} catch (const FlycastException& e) {
 			ERROR_LOG(COMMON, "%s", e.what());
 		}
-
+		// Flush the VMU files to disk
+		mcfg_DestroyDevices(true);
 		config::Settings::instance().reset();
 		config::Settings::instance().load(false);
 		settings.content.path.clear();
@@ -741,6 +752,7 @@ void Emulator::unloadGame()
 		settings.content.fileName.clear();
 		settings.content.title.clear();
 		settings.platform.system = DC_PLATFORM_DREAMCAST;
+		custom_texture.terminate();
 		state = Init;
 		EventManager::event(Event::Terminate);
 	}
@@ -764,12 +776,13 @@ void Emulator::term()
 			delete recompiler;
 			recompiler = nullptr;
 		}
-		custom_texture.Terminate();	// lr: avoid deadlock on exit (win32)
+		custom_texture.terminate();	// lr: avoid deadlock on exit (win32)
 		reios_term();
 		aica::term();
 		pvr::term();
 		mem_Term();
 		libGDR_term();
+		ice::term();
 
 		state = Terminated;
 	}
@@ -839,6 +852,7 @@ void loadGameSpecificSettings()
 	loadSpecialSettings();
 
 	config::Settings::instance().setGameId(settings.content.gameId);
+	custom_texture.init();
 
 	// Reload per-game settings
 	config::Settings::instance().load(true);
@@ -870,7 +884,8 @@ void Emulator::stepRange(u32 from, u32 to)
 
 void Emulator::loadstate(Deserializer& deser)
 {
-	custom_texture.Terminate();
+	if (!custom_texture.preloaded())
+		custom_texture.terminate();
 #if FEAT_AREC == DYNAREC_JIT
 	aica::arm::recompiler::flush();
 #endif
@@ -938,7 +953,8 @@ void Emulator::run()
 		runInternal();
 		if (ggpo::active())
 			ggpo::nextFrame();
-	} catch (...) {
+	} catch (const std::exception& e) {
+		ERROR_LOG(COMMON, "Exception: %s\n", e.what());
 		setNetworkState(false);
 		state = Error;
 		getSh4Executor()->Stop();
@@ -1106,7 +1122,7 @@ void Emulator::diskChange()
 	cheatManager.reset(settings.content.gameId);
 	if (cheatManager.isWidescreen())
 		config::ScreenStretching.override(134);	// 4:3 -> 16:9
-	custom_texture.Terminate();
+	custom_texture.terminate();
 	EventManager::event(Event::DiskChange);
 }
 

@@ -342,10 +342,15 @@ static bool save_game_state(unsigned char **buffer, int *len, int *checksum, int
 		return false;
 	}
 	Serializer ser(*buffer, allocSize, true);
-	ser << frame;
-	dc_serialize(ser);
-	verify(ser.size() < allocSize);
-	*len = ser.size();
+	try {
+		ser << frame;
+		dc_serialize(ser);
+		*len = ser.size();
+	} catch (const Serializer::Exception& e) {
+		WARN_LOG(NETWORK, "Save state failed: %s", e.what());
+		*len = 0;
+		return false;
+	}
 #ifdef SYNC_TEST
 	*checksum = XXH3_64bits(*buffer, usedSize);
 #endif
@@ -770,7 +775,11 @@ bool nextFrame()
 	if (result != GGPO_OK)
 		WARN_LOG(NETWORK, "ggpo_add_local_input(2) failed %d", result);
 #endif
-	return active();
+	if (active()) {
+		emu.getSh4Executor()->Start();
+		return true;
+	}
+	return false;
 }
 
 bool active()

@@ -40,6 +40,7 @@ Option<bool> ForceFreePlay("ForceFreePlay", true);
 Option<bool, false> FetchBoxart("FetchBoxart", true);
 Option<bool, false> BoxartDisplayMode("BoxartDisplayMode", true);
 Option<int, false> UIScaling("UIScaling", 100);
+Option<int, false> UITheme("UITheme", 0);
 
 // Sound
 
@@ -71,11 +72,13 @@ Option<bool> ShowFPS("rend.ShowFPS");
 Option<bool> RenderToTextureBuffer("rend.RenderToTextureBuffer");
 Option<bool> TranslucentPolygonDepthMask("rend.TranslucentPolygonDepthMask");
 Option<bool> ModifierVolumes("rend.ModifierVolumes", true);
-Option<int> TextureUpscale("rend.TextureUpscale", 1);
+Option<int> TextureUpscale("rend.TextureUpscale2", 1);
 Option<int> MaxFilteredTextureSize("rend.MaxFilteredTextureSize", 256);
 Option<float> ExtraDepthScale("rend.ExtraDepthScale", 1.f);
 Option<bool> CustomTextures("rend.CustomTextures");
+Option<bool> PreloadCustomTextures("rend.PreloadCustomTextures");
 Option<bool> DumpTextures("rend.DumpTextures");
+Option<bool> DumpReplacedTextures("rend.DumpReplacedTextures");
 Option<int> ScreenStretching("rend.ScreenStretching", 100);
 Option<bool> Fog("rend.Fog", true);
 Option<bool> FloatVMUs("rend.FloatVMUs");
@@ -98,6 +101,8 @@ Option<int> SkipFrame("ta.skip");
 Option<int> MaxThreads("pvr.MaxThreads", 3);
 Option<int> AutoSkipFrame("pvr.AutoSkipFrame", 0);
 Option<int> RenderResolution("rend.Resolution", 480);
+Option<bool> IntegerScale("rend.IntegerScale", false);
+Option<bool> LinearInterpolation("rend.LinearInterpolation", true);
 Option<bool> VSync("rend.vsync", true);
 Option<int64_t> PixelBufferSize("rend.PixelBufferSize", 512_MB);
 Option<int> AnisotropicFiltering("rend.AnisotropicFiltering", 1);
@@ -133,6 +138,15 @@ Option<bool> RamMod32MB("Dreamcast.RamMod32MB", false);
 Option<bool> OpenGlChecks("OpenGlChecks", false, "validate");
 
 Option<std::vector<std::string>, false> ContentPath("Dreamcast.ContentPath");
+Option<std::vector<std::string>, false> BiosPath("Dreamcast.BiosPath");
+Option<std::string, false> VMUPath("Dreamcast.VMUPath");
+Option<std::vector<std::string>, false> SavestatePath("Dreamcast.SavestatePath");
+Option<std::string, false> SavePath("Dreamcast.SavePath");
+Option<std::vector<std::string>, false> TexturePath("Dreamcast.TexturePath");
+Option<std::string, false> TextureDumpPath("Dreamcast.TextureDumpPath");
+Option<std::string, false> BoxartPath("Dreamcast.BoxartPath");
+Option<std::vector<std::string>, false> MappingsPath("Dreamcast.MappingsPath");
+Option<std::vector<std::string>, false> CheatPath("Dreamcast.CheatPath");
 Option<bool, false> HideLegacyNaomiRoms("Dreamcast.HideLegacyNaomiRoms", true);
 Option<bool, false> UploadCrashLogs("UploadCrashLogs", true);
 Option<bool, false> DiscordPresence("DiscordPresence", true);
@@ -199,11 +213,19 @@ std::array<std::array<Option<MapleDeviceType>, 2>, 4> MapleExpansionDevices {{
 	{{Option<MapleDeviceType>("device4.1", MDT_None, "input"),
 	Option<MapleDeviceType>("device4.2", MDT_None, "input")}},
 }};
+
+std::array<Option<bool>, 4> UseNetworkExpansionDevices{
+	Option<bool>("device1.UseNetworkExpansionDevices", false, "input"),
+	Option<bool>("device2.UseNetworkExpansionDevices", false, "input"),
+	Option<bool>("device3.UseNetworkExpansionDevices", false, "input"),
+	Option<bool>("device4.UseNetworkExpansionDevices", false, "input"),
+};
+
 Option<bool> PerGameVmu("PerGameVmu", false, "config");
 #ifdef _WIN32
 Option<bool, false> UseRawInput("RawInput", false, "input");
 #endif
-Option<bool> UsePhysicalVmuMemory("UsePhysicalVmuMemory", false);
+Option<bool> UsePhysicalVmuMemory("UsePhysicalVmuMemory", true);
 
 #ifdef USE_LUA
 Option<std::string, false> LuaFileName("LuaFileName", "flycast.lua");

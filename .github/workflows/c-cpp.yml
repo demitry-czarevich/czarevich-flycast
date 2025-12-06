@@ -33,7 +33,7 @@ jobs:
           brew update || :
           brew install libao ldid pulseaudio
           brew uninstall --ignore-dependencies zstd
-          VULKAN_VER=1.3.261.1 && aria2c https://sdk.lunarg.com/sdk/download/$VULKAN_VER/mac/vulkansdk-macos-$VULKAN_VER.dmg
+          VULKAN_VER=1.3.290.0 && aria2c https://sdk.lunarg.com/sdk/download/$VULKAN_VER/mac/vulkansdk-macos-$VULKAN_VER.dmg
           hdiutil attach ./vulkansdk-macos-*.dmg -mountpoint /Volumes/VulkanSDK
           sudo /Volumes/VulkanSDK/InstallVulkan.app/Contents/MacOS/InstallVulkan --root $HOME/VulkanSDK --accept-licenses --default-answer --confirm-command install
           hdiutil detach /Volumes/VulkanSDK
@@ -72,12 +72,8 @@ jobs:
           submodules: recursive
 
       - name: Compile a universal OpenMP (macOS)
-        run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew reinstall --build-from-source --formula ./shell/apple/libomp.rb
+        run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 HOMEBREW_DEVELOPER=1 brew reinstall --build-from-source --formula ./shell/apple/libomp.rb
         if: matrix.config.name == 'apple-darwin'
-
-      - name: Compile OpenMP.xcframework (iOS)
-        run: ./shell/apple/emulator-ios/OpenMP/build_ios_openmp.sh --disableSimulator
-        if: matrix.config.name == 'apple-ios'
 
       - uses: actions/cache@v4
         with:

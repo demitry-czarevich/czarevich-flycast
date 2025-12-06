@@ -446,13 +446,42 @@ void CheatManager::reset(const std::string& gameId)
 		cheats.clear();
 		setActive(false);
 		this->gameId = gameId;
+
 #ifndef LIBRETRO
 		if (!settings.raHardcoreMode)
 		{
 			std::string cheatFile = cfgLoadStr("cheats", gameId, "");
 			if (!cheatFile.empty())
 				loadCheatFile(cheatFile);
+			else
+			{
+				// Try to auto-locate a cheat file in user-defined CheatPath
+				std::string romName = settings.content.fileName;
+				const char* exts[] = { ".cht", ".txt" };
+				for (const auto& base : config::CheatPath.get())
+				{
+					if (base.empty())
+						continue;
+					for (const char* ext : exts)
+					{
+						try
+						{
+							std::string candidate = hostfs::storage().getSubPath(base, romName + ext);
+							if (hostfs::storage().exists(candidate))
+							{
+								loadCheatFile(candidate);
+								cfgSaveStr("cheats", gameId, candidate);
+								goto found_cheats;
+							}
+						}
+						catch (const hostfs::StorageException&)
+						{
+						}
+					}
+				}
+			}
 		}
+found_cheats:
 #endif
 		size_t cheatCount = cheats.size();
 		if (gameId == "Fixed BOOT strapper")	// Extreme Hunting 2
@@ -577,6 +606,20 @@ void CheatManager::reset(const std::string& gameId)
 				cheats.emplace_back(Cheat::Type::runNextIfEq, "modem automode4 ifeq", true, 32, addr + 0x10, 0x30303838, true);	// "8800"
 				cheats.emplace_back(Cheat::Type::setValue, "modem automode4 set", true, 32,     addr + 0x10, 0x30202020, true);	// "   0"
 			}
+		}
+		else if (gameId == "HDR-0113")	// Power Smash
+		{
+			cheats.emplace_back(Cheat::Type::runNextIfEq, "no dupe SYN ifeq", true, 16, 0x14d258, 0xbbce, true);	// bsr SendNormalSYN
+			cheats.emplace_back(Cheat::Type::setValue,     "no dupe SYN set", true, 16, 0x14d258, 0x0009, true);	// nop
+			cheats.emplace_back(Cheat::Type::runNextIfEq, "no dupe ACK ifeq", true, 16, 0x14af42, 0x430b, true);	// jsr TCPInternalSendPacket
+			cheats.emplace_back(Cheat::Type::setValue,     "no dupe ACK set", true, 16, 0x14af42, 0x0009, true);	// nop
+		}
+		else if (gameId == "HDR-0091")	// Pro Yakyuu Team de Asobou Net!
+		{
+			cheats.emplace_back(Cheat::Type::runNextIfEq, "no dupe SYN ifeq", true, 16, 0xe13e0c, 0xbbce, true);	// bsr SendNormalSYN
+			cheats.emplace_back(Cheat::Type::setValue,     "no dupe SYN set", true, 16, 0xe13e0c, 0x0009, true);	// nop
+			cheats.emplace_back(Cheat::Type::runNextIfEq, "no dupe ACK ifeq", true, 16, 0xe11af6, 0x430b, true);	// jsr TCPInternalSendPacket
+			cheats.emplace_back(Cheat::Type::setValue,     "no dupe ACK set", true, 16, 0xe11af6, 0x0009, true);	// nop
 		}
 
 		if (cheats.size() > cheatCount)

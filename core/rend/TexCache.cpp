@@ -33,7 +33,12 @@ const std::array<f32, 16> D_Adjust_LoD_Bias = {
 		0.f, -4.f, -2.f, -1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f
 };
 
-static std::vector<vram_block*> VramLocks[VRAM_SIZE_MAX / PAGE_SIZE];
+static std::vector<vram_block*> *VramLocks;
+
+static inline void initVramLocks() {
+	if (VramLocks == nullptr)
+		VramLocks = new std::vector<vram_block*>[VRAM_SIZE_MAX / PAGE_SIZE];
+}
 
 //List functions
 //
@@ -76,7 +81,7 @@ static std::mutex vramlist_lock;
 
 bool VramLockedWriteOffset(size_t offset)
 {
-	if (offset >= VRAM_SIZE)
+	if (offset >= VRAM_SIZE || VramLocks == nullptr)
 		return false;
 
 	size_t addr_hash = offset / PAGE_SIZE;
@@ -290,13 +295,16 @@ bool BaseTextureCacheData::Delete()
 	return true;
 }
 
-BaseTextureCacheData::BaseTextureCacheData(TSP tsp, TCW tcw)
+BaseTextureCacheData::BaseTextureCacheData(TSP tsp, TCW tcw, int area)
 {
+	initVramLocks();
+
 	if (tcw.VQ_Comp == 1 && tcw.MipMapped == 1)
 		// Star Wars Demolition
 		tcw.ScanOrder = 0;
 	this->tsp = tsp;
 	this->tcw = tcw;
+	this->area = area;
 
 	//Reset state info ..
 	Updates = 0;
@@ -437,7 +445,7 @@ bool BaseTextureCacheData::Update()
 	bool has_alpha = false;
 	if (IsPaletted())
 	{
-		if (IsGpuHandledPaletted(tsp, tcw))
+		if (IsGpuHandledPaletted(tsp, tcw, area))
 		{
 			tex_type = TextureType::_8;
 			gpuPalette = true;
@@ -497,7 +505,7 @@ bool BaseTextureCacheData::Update()
 			return false;
 		}
 	}
-	if (config::CustomTextures)
+	if (custom_texture.enabled())
 	{
 		u32 oldHash = texture_hash;
 		ComputeHash();
@@ -508,7 +516,7 @@ bool BaseTextureCacheData::Update()
 			size = originalSize;
 			return true;
 		}
-		custom_texture.LoadCustomTextureAsync(this);
+		custom_texture.loadCustomTextureAsync(this);
 	}
 
 	void *temp_tex_buffer = NULL;
@@ -668,7 +676,7 @@ bool BaseTextureCacheData::Update()
 	if (config::DumpTextures)
 	{
 		ComputeHash();
-		custom_texture.DumpTexture(texture_hash, upscaled_w, upscaled_h, tex_type, temp_tex_buffer);
+		custom_texture.dumpTexture(this, upscaled_w, upscaled_h, temp_tex_buffer);
 		NOTICE_LOG(RENDERER, "Dumped texture %x.png. Old hash %x", texture_hash, old_texture_hash);
 	}
 	PrintTextureName();
